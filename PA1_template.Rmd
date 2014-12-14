@@ -1,0 +1,70 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: html_document
+keep_md: true
+---
+
+opts_chunk$set(echo=TRUE)    
+
+## Loading and preprocessing the data
+```{r load&Preprocess}
+setwd("C:/Quan/MOOC/5. Reproducible Research/Peer Assessments/Peer Assessment1")
+activityData <- read.csv("./activity.csv", sep=",", header=T)
+str(activityData)
+summary(activityData)
+```
+
+## What is mean total number of steps taken per day?
+```{r MeanStepsPerDay}
+library(ggplot2) 
+hist <- qplot(x=as.Date(date), steps, data=subset(activityData, complete.cases(activityData)), stat='summary', fun.y=sum, main="Total No of Steps Taken Per Day", xlab="Date", ylab="No of Steps", geom = "bar")
+plot(hist)
+aggData <- aggregate(steps ~ date, data = activityData, sum, na.rm = TRUE)
+meanStepsPerDay <- mean(aggData$steps)
+medStepsPerDay <- median(aggData$steps)
+meanStepsPerDay
+medStepsPerDay
+```
+The mean and median top number of steps taken per day are `r meanStepsPerDay` and `r medStepsPerDay` respectively.
+  
+## What is the average daily activity pattern?
+```{r AvgDailyAct}
+aggMeanData <- aggregate(steps ~ interval, data = activityData, mean, na.rm = TRUE)
+plot(steps ~ interval, data = aggMeanData, type = "l", main = "Average Daily Activity", xlab = "5 mins Time Interval", ylab = "Average No Of Steps Taken")
+ind <- which.max(aggMeanData[,2])
+interval <- aggMeanData[ind,1]
+maxSteps <- aggMeanData[ind,2]
+interval
+maxSteps
+```
+The maximum number of steps is `r maxSteps` and takes place at the `r interval` 5-minute interval across all the days in the dataset.
+
+## Inputing missing values
+```{r InputMissingValues}
+numNAValues <- sum(is.na(activityData))
+completeActivityData <- activityData
+completeActivityData$steps[is.na(completeActivityData$steps)] <- mean(completeActivityData$steps, na.rm=T)
+library(ggplot2) 
+hist <- qplot(x=as.Date(date), steps, data=completeActivityData, stat='summary', fun.y=sum, main="Total No of Steps Taken Per Day", xlab="Date", ylab="No of Steps", geom = "bar")
+plot(hist)
+completeAggData <- aggregate(steps ~ date, data = completeActivityData, sum, na.rm = TRUE)
+compMeanStepsPerDay <- mean(completeAggData$steps)
+compMedStepsPerDay <- median(completeAggData$steps)
+compMeanStepsPerDay
+compMedStepsPerDay
+```
+The total number of rows with NA is `r numNAValues`.  
+The strategy is to fill in the sample mean steps (non-NA) for all of the missing values in the dataset.  
+AFter filling all missing values, the mean and median top number of steps taken per day are `r compMeanStepsPerDay` and `r compMedStepsPerDay` respectively.  
+The mean does not differ and the median differs slightly from the estimates from the first part of the assignment, after inputting missing data on the estimates of the total daily number of steps.
+
+## Are there differences in activity patterns between weekdays and weekends?
+```{r DiffWkDaysWkEnds}
+completeActivityData$day <- weekdays(as.Date(completeActivityData$date))
+completeActivityData$wend <- as.factor(ifelse(weekdays(as.Date(completeActivityData$date)) %in% c("Saturday","Sunday"), "Weekend", "Weekday"))
+library(lattice)
+totalStepsDay <- aggregate(steps ~ interval + wend, data=completeActivityData, mean)
+xyplot(steps ~ interval | factor(wend), data=totalStepsDay, layout = c(1,2), type="l")
+```
+
+
